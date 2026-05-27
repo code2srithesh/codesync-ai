@@ -1,0 +1,63 @@
+# ===================================================================
+# OS / System Files
+# ===================================================================
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+
+# ===================================================================
+# IDE / Editor Files
+# ===================================================================
+.idea/
+*.iml
+.vscode/
+*.sublime-workspace
+.project
+.classpath
+.settings/
+bin/
+
+# ===================================================================
+# Frontend / Node configurations
+# ===================================================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/out/
+frontend/.svelte-kit/
+frontend/.next/
+frontend/stats.html
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# ===================================================================
+# Backend / Java Maven builds
+# ===================================================================
+backend/target/
+backend/*.class
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/.mvn/
+backend/.factorypath
+backend/exec-*
+
+# ===================================================================
+# Datastores & Docker
+# ===================================================================
+pgdata/
+redisdata/
+docker-volumes/
+.docker-volumes/
+
+# ===================================================================
+# Environment secrets & Configurations
+# ===================================================================
+.env
+.env*.local
+*.key
+*.pem
+backend/src/main/resources/application-prod.properties

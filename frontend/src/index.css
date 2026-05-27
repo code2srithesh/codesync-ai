@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-dark-900 text-zinc-100 antialiased selection:bg-brand-purple/30 selection:text-white;
+  }
+}
+
+/* Custom premium design system utility classes */
+.glass-panel {
+  background: rgba(24, 24, 27, 0.65);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(168, 85, 247, 0.3);
+  box-shadow: 0 10px 30px -10px rgba(168, 85, 247, 0.15);
+  transform: translateY(-2px);
+}
+
+.gradient-text-purple {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-purple via-brand-magenta to-brand-blue;
+}
+
+.glow-btn {
+  @apply relative overflow-hidden transition-all duration-300 active:scale-95;
+}
+
+.glow-btn::after {
+  content: '';
+  @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%);
+}
+
+.glow-btn:hover::after {
+  @apply opacity-100;
+}
+
+/* Monaco Custom Cursors overlay overlay definitions */
+.collab-cursor-overlay {
+  position: absolute;
+  width: 2px;
+  pointer-events: none;
+  z-index: 100;
+  transition: all 0.08s ease-out;
+}
+
+.collab-cursor-flag {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: white;
+  pointer-events: none;
+  z-index: 101;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Grid backgrounds backgrounds matching modern tech look */
+.tech-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
