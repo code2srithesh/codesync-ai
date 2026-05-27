@@ -810,6 +810,7 @@ const CodingRoom: React.FC = () => {
                 roomCode={roomCode!}
                 editorContent={editorContent}
                 editorLanguage={editorLanguage}
+                onInjectCode={handleEditorChange}
               />
             </div>
           )}

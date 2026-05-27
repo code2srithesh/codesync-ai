@@ -35,7 +35,12 @@ public class SandboxExecutorService {
         boolean hasDocker = checkDockerAvailable();
         if (hasDocker) {
             try {
-                return executeInDocker(language, code, stdin);
+                CodeExecutionResponse response = executeInDocker(language, code, stdin);
+                // Fail-safe fallback if the daemon CLI printed a connection socket error
+                if (response.getOutput() != null && (response.getOutput().contains("Docker daemon") || response.getOutput().contains("docker.sock"))) {
+                    return simulateExecution(language, code, stdin);
+                }
+                return response;
             } catch (Exception e) {
                 // Fail-safe to Mock execution if Docker run fails
             }
@@ -63,8 +68,9 @@ public class SandboxExecutorService {
 
     private boolean checkDockerAvailable() {
         try {
-            Process process = Runtime.getRuntime().exec("docker --version");
-            boolean finished = process.waitFor(1000, TimeUnit.MILLISECONDS);
+            // Verify both the command and that the daemon process is active
+            Process process = Runtime.getRuntime().exec("docker info");
+            boolean finished = process.waitFor(1500, TimeUnit.MILLISECONDS);
             return finished && process.exitValue() == 0;
         } catch (Exception e) {
             return false;
