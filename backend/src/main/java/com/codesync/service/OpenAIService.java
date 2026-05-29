@@ -212,4 +212,44 @@ public class OpenAIService {
             default -> "### 🤖 Copilot Response\nCode analysis completed successfully.";
         };
     }
+
+    public String generateInterviewScorecard(String code, String chatHistory, String language) {
+        String prompt = "You are CodeSync AI Interview Evaluation System. Review this candidate's technical coding interview.\n"
+                + "Final Candidate Code (" + language + "):\n```" + language + "\n" + code + "\n```\n\n"
+                + "Chat Transcript:\n" + chatHistory + "\n\n"
+                + "Provide a comprehensive technical scorecard evaluation. Your response MUST include:\n"
+                + "1. OVERALL RATING (out of 10)\n"
+                + "2. INDIVIDUAL METRICS (Score 1-10 for: Correctness, Speed/Efficiency, Code Cleanliness, and Technical Communication)\n"
+                + "3. AI FEEDBACK SUMMARY: Pros, Cons, and Key Optimizing recommendations in Markdown format.";
+
+        if (apiKey == null || apiKey.equals("mock-key") || apiKey.isBlank()) {
+            return simulateEvaluationScorecard(language);
+        } else {
+            try {
+                return callOpenAI(prompt);
+            } catch (Exception e) {
+                return "### ⚠️ OpenAI Connection Error\nFailed to establish connection to OpenAI endpoints. Falling back to simulated candidate evaluation scorecard:\n\n" 
+                        + simulateEvaluationScorecard(language);
+            }
+        }
+    }
+
+    private String simulateEvaluationScorecard(String language) {
+        return "### 📊 CodeSync Technical Interview Assessment Scorecard\n\n"
+                + "#### 🌟 Overall Score: 8.5 / 10\n"
+                + "The candidate demonstrated solid logic structure and good optimization choices. Code handles edge cases and runs cleanly within sandbox limits.\n\n"
+                + "#### 📈 Performance Breakdowns:\n"
+                + "* **Correctness**: 9 / 10\n"
+                + "* **Speed & Asymptotic Efficiency**: 8 / 10\n"
+                + "* **Code Cleanliness (SOLID/DRY)**: 8 / 10\n"
+                + "* **Technical Communication**: 9 / 10\n\n"
+                + "#### 🟢 Strengths (Pros):\n"
+                + "* **Linear Time Execution**: Candidate implemented a Map lookup table resolving search tasks in O(N) instead of nesting index scans.\n"
+                + "* **Clear Communication**: Candid chat messages mapped structural trade-offs before typing loops.\n\n"
+                + "#### 🔴 Areas for Improvement (Cons):\n"
+                + "* **Type Cast Safety**: Missing null validations before array indexing could trigger index exceptions under specialized empty parameters.\n"
+                + "* **Hardcoded Inputs**: Static thresholds can be parameterized to make functions fully generic.\n\n"
+                + "#### 💡 AI Recommendation:\n"
+                + "Excellent work. Recommend moving candidate to the next round of live architectural design interviews.";
+    }
 }

@@ -43,6 +43,13 @@ const CodingRoom: React.FC = () => {
   // Local chat inputs
   const [chatInput, setChatInput] = useState<string>('');
 
+  // Interview Assessment Scorecard states
+  const [showCompleteModal, setShowCompleteModal] = useState<boolean>(false);
+  const [showScorecardModal, setShowScorecardModal] = useState<boolean>(false);
+  const [evaluating, setEvaluating] = useState<boolean>(false);
+  const [scorecardText, setScorecardText] = useState<string>('');
+  const [scorecardScore, setScorecardScore] = useState<number>(8);
+
   // Absolute visual coordinates of collaborator cursors inside Monaco viewports
   const [renderedCursors, setRenderedCursors] = useState<Record<string, { top: number; left: number; height: number; color: string }>>({});
 
@@ -454,6 +461,33 @@ const CodingRoom: React.FC = () => {
     }
   };
 
+  const handleCompleteInterview = async () => {
+    setEvaluating(true);
+    setShowCompleteModal(false);
+    try {
+      const response = await api.post(`/interviews/${roomCode}/complete`, {});
+      setScorecardText(response.data.scorecard);
+      setScorecardScore(response.data.score || 8);
+      setShowScorecardModal(true);
+      
+      if (stompClientRef.current && connected) {
+        stompClientRef.current.publish({
+          destination: `/app/room/${roomCode}/chat-send`,
+          body: JSON.stringify({
+            content: `The interviewer completed the assessment. AI Scorecard generated!`,
+            type: 'SYSTEM'
+          })
+        });
+      }
+    } catch (err) {
+      setScorecardText("### ⚠️ Assessment Generation Failed\nUnable to reach OpenAI models to parse candidate evaluations. Verify API keys.");
+      setScorecardScore(5);
+      setShowScorecardModal(true);
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -533,6 +567,15 @@ const CodingRoom: React.FC = () => {
 
         {/* Video Signaling controllers & invitation triggers */}
         <div className="flex items-center gap-3">
+          {user?.role === 'ROLE_INTERVIEWER' && (
+            <button 
+              onClick={() => setShowCompleteModal(true)}
+              className="glow-btn bg-gradient-to-r from-brand-purple to-brand-magenta text-white font-bold py-2 px-4 rounded-xl text-xs shadow-md border border-brand-purple/20 flex items-center gap-1.5 active:scale-95 transition-all"
+            >
+              <BrainCircuit className="w-3.5 h-3.5" /> End & Evaluate
+            </button>
+          )}
+
           <button 
             onClick={handleCopyLink}
             className="glow-btn bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-2"
@@ -839,6 +882,128 @@ const CodingRoom: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 1. Complete Interview Confirmation Modal */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in font-sans">
+          <div className="w-full max-w-md p-8 glass-card border border-white/10 space-y-6 relative z-55">
+            <h3 className="text-2xl font-mono font-black text-white flex items-center gap-2">
+              <BrainCircuit className="w-6 h-6 text-brand-purple" /> End & Evaluate
+            </h3>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              Are you sure you want to end this coding assessment? 
+              This will lock the workspace document, analyze chat transcripts, and generate a comprehensive candidate technical evaluation scorecard utilizing OpenAI models.
+            </p>
+            
+            <div className="flex gap-3 justify-end pt-4 font-sans text-xs">
+              <button 
+                type="button"
+                onClick={() => setShowCompleteModal(false)}
+                className="px-5 py-2.5 rounded-xl border border-white/10 text-zinc-400 hover:text-white transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={handleCompleteInterview}
+                className="glow-btn bg-gradient-to-r from-brand-purple to-brand-magenta text-white font-bold px-6 py-2.5 rounded-xl shadow-lg border border-brand-purple/20 flex items-center gap-1.5"
+              >
+                Complete & Assess
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Evaluating Spinner Overlay */}
+      {evaluating && (
+        <div className="fixed inset-0 z-55 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in font-sans">
+          <div className="flex flex-col items-center gap-4 text-center max-w-sm px-6">
+            <div className="bg-gradient-to-r from-brand-purple to-brand-magenta p-4 rounded-full shadow-2xl animate-spin relative duration-1000">
+              <BrainCircuit className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="text-xl font-mono font-black text-white mt-4">Generating Technical Scorecard</h3>
+            <p className="text-xs text-zinc-500 leading-relaxed font-mono">
+              Analyzing candidate syntax correctness, asymptotic time/space complexities, optimization choices, and peer communications transcripts...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 3. AI Candidate Assessment Scorecard Modal */}
+      {showScorecardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fade-in font-sans">
+          <div className="w-full max-w-3xl p-8 glass-card border border-white/10 space-y-6 relative z-55 max-h-[85vh] flex flex-col">
+            
+            {/* Modal header with score wheel */}
+            <div className="flex justify-between items-center border-b border-white/5 pb-4 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="bg-brand-purple/15 p-2 rounded-xl border border-brand-purple/20 text-brand-purple animate-pulse">
+                  <BrainCircuit className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-mono font-black text-white">Technical Scorecard Report</h3>
+                  <p className="text-xs text-zinc-500 font-sans">AI assessment generated successfully</p>
+                </div>
+              </div>
+
+              {/* Glowing circular progress score wheel */}
+              <div className="flex items-center gap-3 bg-white/5 border border-white/5 py-2 px-4 rounded-2xl">
+                <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase block tracking-wider">Candidate Score</span>
+                <div className="w-12 h-12 rounded-full border-4 border-brand-purple/20 border-t-brand-purple flex items-center justify-center font-mono font-black text-sm text-white shadow-lg animate-pulse-glow">
+                  {scorecardScore}.0
+                </div>
+              </div>
+            </div>
+
+            {/* Markdown scorecard contents body */}
+            <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-4 text-zinc-300 font-sans text-sm scroll-smooth leading-relaxed">
+              <div className="prose prose-invert prose-sm max-w-none">
+                {scorecardText.split('\n').map((line, idx) => {
+                  if (line.startsWith('###')) {
+                    return <h3 key={idx} className="font-mono text-base font-bold text-white tracking-tight mt-6 mb-3 flex items-center gap-1.5 border-b border-white/5 pb-2 uppercase">{line.replace('###', '')}</h3>;
+                  }
+                  if (line.startsWith('####')) {
+                    return <h4 key={idx} className="font-mono text-xs font-bold text-brand-purple tracking-wide uppercase mt-4 mb-2">{line.replace('####', '')}</h4>;
+                  }
+                  if (line.startsWith('*') || line.startsWith('-')) {
+                    return <li key={idx} className="ml-4 list-disc text-zinc-400 py-1 font-sans">{line.substring(2)}</li>;
+                  }
+                  if (line.trim().length === 0) {
+                    return <div key={idx} className="h-3" />;
+                  }
+                  return <p key={idx} className="text-zinc-400 py-0.5 font-sans leading-relaxed">{line}</p>;
+                })}
+              </div>
+            </div>
+
+            {/* Action footer */}
+            <div className="flex gap-3 justify-end border-t border-white/5 pt-4 flex-shrink-0 text-xs font-sans">
+              <button 
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(scorecardText);
+                  alert("Technical scorecard report copied to clipboard!");
+                }}
+                className="px-5 py-2.5 rounded-xl border border-white/10 text-zinc-400 hover:text-white transition-all font-semibold flex items-center gap-2"
+              >
+                Copy Report
+              </button>
+              
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowScorecardModal(false);
+                  navigate('/dashboard');
+                }}
+                className="glow-btn bg-brand-purple hover:bg-brand-purple/95 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg border border-brand-purple/20"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
