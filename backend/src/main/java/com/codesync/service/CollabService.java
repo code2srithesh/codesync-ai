@@ -7,6 +7,7 @@ import com.codesync.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -22,6 +23,7 @@ public class CollabService {
     private final MessageRepository messageRepository;
     private final SessionPlaybackRepository playbackRepository;
     private final WhiteboardElementRepository whiteboardElementRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public RoomResponse createRoom(RoomRequest request, String creatorUsername) {
@@ -244,6 +246,28 @@ public class CollabService {
         Room room = roomRepository.findByRoomCode(roomCode)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
         whiteboardElementRepository.deleteByRoomId(room.getId());
+    }
+
+    @Transactional
+    public void handleUserDisconnect(String username) {
+        List<RoomParticipant> activeParticipants = participantRepository.findActiveByUsername(username);
+        for (RoomParticipant rp : activeParticipants) {
+            rp.setStatus("LEFT");
+            rp.setLeftAt(LocalDateTime.now());
+            participantRepository.save(rp);
+
+            // Broadcast standard SYSTEM WebSocket chat event to connected peers in this room
+            String roomCode = rp.getRoom().getRoomCode();
+            Map<String, Object> broadcast = new HashMap<>();
+            broadcast.put("id", UUID.randomUUID().toString());
+            broadcast.put("sender", "System");
+            broadcast.put("senderRole", "SYSTEM");
+            broadcast.put("content", username + " left the workspace.");
+            broadcast.put("type", "SYSTEM");
+            broadcast.put("createdAt", LocalDateTime.now().toString());
+
+            messagingTemplate.convertAndSend("/topic/room/" + roomCode + "/chat", broadcast);
+        }
     }
 
     private String generateRoomCode() {

@@ -18,4 +18,7 @@ public interface RoomParticipantRepository extends JpaRepository<RoomParticipant
     
     @Query("SELECT rp FROM RoomParticipant rp JOIN FETCH rp.room WHERE rp.user.id = :userId ORDER BY rp.joinedAt DESC")
     List<RoomParticipant> findRoomsByUserId(UUID userId);
+
+    @Query("SELECT rp FROM RoomParticipant rp JOIN FETCH rp.room JOIN FETCH rp.user WHERE rp.user.username = :username AND rp.status = 'ACTIVE'")
+    List<RoomParticipant> findActiveByUsername(String username);
 }
