@@ -55,7 +55,14 @@ public class OpenAIService {
         // Save AI suggestion transcript in database
         try {
             User user = userRepository.findByUsername(username).orElse(null);
-            Room room = roomRepository.findById(UUID.fromString(roomIdStr)).orElse(null);
+            Room room = roomRepository.findByRoomCode(roomIdStr)
+                    .orElseGet(() -> {
+                        try {
+                            return roomRepository.findById(UUID.fromString(roomIdStr)).orElse(null);
+                        } catch (Exception ex) {
+                            return null;
+                        }
+                    });
             if (user != null) {
                 AISuggestion suggestion = AISuggestion.builder()
                         .user(user)

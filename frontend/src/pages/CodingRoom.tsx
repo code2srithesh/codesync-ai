@@ -428,11 +428,29 @@ const CodingRoom: React.FC = () => {
     const lang = e.target.value;
     setEditorLanguage(lang);
 
+    const defaultTemplates: Record<string, string> = {
+      python: `# Pair Programming Room\n\ndef solution(nums):\n    # Write your program code collaboratively here\n    print("CodeSync AI initialized.")\n    return nums\n`,
+      javascript: `// Pair Programming Room\n\nfunction solution(nums) {\n    // Write your program code collaboratively here\n    console.log("CodeSync AI initialized.");\n    return nums;\n}\n`,
+      java: `// Pair Programming Room\n\npublic class Main {\n    public static void main(String[] args) {\n        // Write your program code collaboratively here\n        System.out.println("CodeSync AI initialized.");\n    }\n}\n`,
+      cpp: `// Pair Programming Room\n#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your program code collaboratively here\n    cout << "CodeSync AI initialized." << endl;\n    return 0;\n}\n`
+    };
+
+    const isTemplate = !editorContent || 
+      !editorContent.trim() || 
+      editorContent.includes('Pair Programming Room') || 
+      editorContent.includes('Welcome to CodeSync AI');
+
+    let updatedContent = editorContent;
+    if (isTemplate) {
+      updatedContent = defaultTemplates[lang] || '';
+      setEditorContent(updatedContent);
+    }
+
     if (stompClientRef.current && connected) {
       stompClientRef.current.publish({
         destination: `/app/room/${roomCode}/code-update`,
         body: JSON.stringify({
-          content: editorContent,
+          content: updatedContent,
           language: lang,
           version: editorVersion
         })
