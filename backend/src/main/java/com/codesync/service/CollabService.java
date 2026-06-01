@@ -21,6 +21,7 @@ public class CollabService {
     private final DocumentRepository documentRepository;
     private final MessageRepository messageRepository;
     private final SessionPlaybackRepository playbackRepository;
+    private final WhiteboardElementRepository whiteboardElementRepository;
 
     @Transactional
     public RoomResponse createRoom(RoomRequest request, String creatorUsername) {
@@ -213,6 +214,36 @@ public class CollabService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return participantRepository.findRoomsByUserId(user.getId());
+    }
+
+    @Transactional
+    public WhiteboardElement saveWhiteboardElement(String roomCode, String elementId, String type, String pointsJson, String color, int strokeWidth) {
+        Room room = roomRepository.findByRoomCode(roomCode)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+        
+        WhiteboardElement element = WhiteboardElement.builder()
+                .id(elementId)
+                .room(room)
+                .type(type)
+                .pointsJson(pointsJson)
+                .color(color)
+                .strokeWidth(strokeWidth)
+                .build();
+                
+        return whiteboardElementRepository.save(element);
+    }
+
+    public List<WhiteboardElement> getWhiteboardElements(String roomCode) {
+        Room room = roomRepository.findByRoomCode(roomCode)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+        return whiteboardElementRepository.findByRoomIdOrderByCreatedAtAsc(room.getId());
+    }
+
+    @Transactional
+    public void clearWhiteboardElements(String roomCode) {
+        Room room = roomRepository.findByRoomCode(roomCode)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+        whiteboardElementRepository.deleteByRoomId(room.getId());
     }
 
     private String generateRoomCode() {

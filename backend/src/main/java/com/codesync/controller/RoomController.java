@@ -5,6 +5,7 @@ import com.codesync.dto.RoomResponse;
 import com.codesync.model.Message;
 import com.codesync.model.RoomParticipant;
 import com.codesync.model.SessionPlayback;
+import com.codesync.model.WhiteboardElement;
 import com.codesync.service.CollabService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -108,6 +109,27 @@ public class RoomController {
             map.put("username", rp.getUser().getUsername());
             map.put("role", rp.getRole());
             map.put("joinedAt", rp.getJoinedAt());
+            list.add(map);
+        }
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/{roomCode}/whiteboard")
+    public ResponseEntity<List<Map<String, Object>>> getWhiteboardElements(@PathVariable String roomCode) {
+        List<WhiteboardElement> elements = collabService.getWhiteboardElements(roomCode);
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (WhiteboardElement we : elements) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", we.getId());
+            map.put("type", we.getType());
+            map.put("color", we.getColor());
+            map.put("strokeWidth", we.getStrokeWidth());
+            try {
+                Object pointsObj = new com.fasterxml.jackson.databind.ObjectMapper().readValue(we.getPointsJson(), Object.class);
+                map.put("points", pointsObj);
+            } catch (Exception e) {
+                map.put("points", new ArrayList<>());
+            }
             list.add(map);
         }
         return ResponseEntity.ok(list);

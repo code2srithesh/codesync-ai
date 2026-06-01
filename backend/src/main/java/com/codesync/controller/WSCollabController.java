@@ -101,10 +101,6 @@ public class WSCollabController {
         messagingTemplate.convertAndSend("/topic/room/" + roomCode + "/chat", broadcast);
     }
 
-    /**
-     * Broadcasts collaborative whiteboard canvas drawings.
-     * Maps to client sending: /app/room/{roomCode}/whiteboard-draw
-     */
     @MessageMapping("/room/{roomCode}/whiteboard-draw")
     @SendTo("/topic/room/{roomCode}/whiteboard")
     public Map<String, Object> handleWhiteboardDraw(
@@ -113,6 +109,30 @@ public class WSCollabController {
             Principal principal
     ) {
         String username = principal != null ? principal.getName() : "Anonymous";
+        
+        String action = (String) payload.get("action");
+        if ("DRAW".equals(action)) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> elementMap = (Map<String, Object>) payload.get("element");
+            if (elementMap != null) {
+                String id = (String) elementMap.get("id");
+                String type = (String) elementMap.get("type");
+                String color = (String) elementMap.get("color");
+                Number strokeWidthNum = (Number) elementMap.get("strokeWidth");
+                int strokeWidth = strokeWidthNum != null ? strokeWidthNum.intValue() : 3;
+                Object pointsObj = elementMap.get("points");
+                String pointsJson = "";
+                try {
+                    pointsJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(pointsObj);
+                } catch (Exception e) {
+                    // Fail-safe serializations fallback
+                }
+                collabService.saveWhiteboardElement(roomCode, id, type, pointsJson, color, strokeWidth);
+            }
+        } else if ("CLEAR".equals(action)) {
+            collabService.clearWhiteboardElements(roomCode);
+        }
+
         Map<String, Object> response = new HashMap<>(payload);
         response.put("sender", username);
         return response;

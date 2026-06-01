@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Square, Circle, Minus, Paintbrush, Eraser, Trash2 } from 'lucide-react';
 import { useCollabStore, WhiteboardElement } from '../store/useCollabStore';
+import api from '../services/api';
 
 interface WhiteboardProps {
   roomCode: string;
@@ -17,7 +18,7 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomCode, stompClient }) => {
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [currentElement, setCurrentElement] = useState<WhiteboardElement | null>(null);
 
-  // Initialize canvas configurations
+  // Initialize canvas configurations and fetch drawings
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -33,10 +34,19 @@ const Whiteboard: React.FC<WhiteboardProps> = ({ roomCode, stompClient }) => {
     context.lineCap = 'round';
     context.lineJoin = 'round';
 
-    redrawCanvas();
-  }, []);
+    const loadHistoricalShapes = async () => {
+      try {
+        const res = await api.get(`/rooms/${roomCode}/whiteboard`);
+        setWhiteboardElements(res.data);
+      } catch (err) {
+        // Fallback for mock environments
+      }
+    };
 
-  // Sync redraw redraw when store elements update
+    loadHistoricalShapes();
+  }, [roomCode]);
+
+  // Sync redraw when store elements update
   useEffect(() => {
     redrawCanvas();
   }, [whiteboardElements]);
